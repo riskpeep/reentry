@@ -14,16 +14,20 @@ fn main() {
     println!("An alarm is flashing and beeping loudly. This doesn't help your headache.");
     println!("");
 
-    let mut command = rlib::Command::new();
+    let mut command: rlib::Command;
     let mut output: String;
 
     //
     // Main Loop
     //
-    while command.verb != "quit" {
+    loop {
         command = rlib::get_input();
         output = rlib::update_state(&command);
         rlib::update_screen(output);
+
+        if matches!(command, rlib::Command::Quit) {
+            break;
+        }
     }
 
     //
