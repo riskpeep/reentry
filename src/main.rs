@@ -15,6 +15,7 @@ fn main() {
     println!("");
 
     let mut command: rlib::Command;
+    let mut world = rlib::World::new();
     let mut output: String;
 
     //
@@ -22,7 +23,7 @@ fn main() {
     //
     loop {
         command = rlib::get_input();
-        output = rlib::update_state(&command);
+        output = world.update_state(&command);
         rlib::update_screen(output);
 
         if matches!(command, rlib::Command::Quit) {
