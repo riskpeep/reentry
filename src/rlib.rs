@@ -12,11 +12,6 @@ pub enum Command {
     Unknown(String),
 }
 
-pub struct Location {
-    pub name: String,
-    pub description: String,
-}
-
 pub struct Object {
     pub name: String,
     pub description: String,
@@ -24,39 +19,25 @@ pub struct Object {
 }
 
 const LOC_BRIDGE: usize = 0;
-const LOC_GALLEY: usize = 1;
+// const LOC_GALLEY: usize = 1;
 const LOC_CRYOCHAMBER: usize = 2;
 const LOC_PLAYER: usize = 3;
+// const LOC_PHOTO: usize = 4;
+// const LOC_CRYOSUIT: usize = 5;
 const LOC_COPILOT: usize = 6;
+// const LOC_PEN: usize = 7;
 
 pub struct World {
-    pub player_location: usize,
-    pub locations: Vec<Location>,
     pub objects: Vec<Object>,
 }
 
 impl World {
     pub fn new() -> Self {
         World {
-            player_location: 0,
-            locations: vec![
-                Location {
-                    name: "Bridge".to_string(),
-                    description: "the bridge".to_string(),
-                },
-                Location {
-                    name: "Galley".to_string(),
-                    description: "the galley".to_string(),
-                },
-                Location {
-                    name: "Cryochamber".to_string(),
-                    description: "the cryochamber".to_string(),
-                },
-            ],
             objects: vec![
                 Object {
                     name: "Bridge".to_string(),
-                    description: "the bridge.".to_string(),
+                    description: "the bridge".to_string(),
                     location: None,
                 },
                 Object {
@@ -116,9 +97,6 @@ impl World {
     fn get_visible(&self, message: &str, noun: &String) -> (String, Option<usize>) {
         let mut output = String::new();
 
-        /*
-         * Attempt 3
-         */
         let obj_index = self.get_object_index(noun);
         let obj_loc = obj_index.and_then(|a| self.objects[a].location);
         let obj_container_loc = obj_index
@@ -176,110 +154,22 @@ impl World {
                 (output, None)
             }
         }
-
-        /*
-         * Attempt 2
-         */
-        /*        let obj_index = self.get_object_index(noun);
-                let obj_loc = obj_index.and_then(|a| self.objects[a].location);
-                let obj_container_loc = obj_index
-                    .and_then(|a| self.objects[a].location)
-                    .and_then(|b| self.objects[b].location);
-                let player_loc = self.objects[LOC_PLAYER].location;
-
-                match (obj_index, obj_loc, obj_container_loc, player_loc) {
-                    (None, _, _, _) => {
-                        output = format!("I don't understand {}.\n", message);
-                        (output, None)
-                    }
-                    (Some(obj_index), Some(obj_loc), Some(obj_container_loc), Some(player_loc)) => {
-                        if !(obj_index == LOC_PLAYER             // Is this the player object?
-                             || obj_index == player_loc          // Is this the player's location?
-                             || obj_loc == LOC_PLAYER            // Is this object's location the same as the player?
-                             || obj_loc == player_loc            // Is this object in the same location as the player?
-                             // Might not be needed at here since we test for this in the match
-                             // || obj_loc == None               // Is this a location?
-                             || obj_container_loc == LOC_PLAYER  // Is this object located inside an object that the player is holding
-                             || obj_container_loc == player_loc)
-                        // Is this object located inside an object at the same place as the player?
-                        {
-                            output = format!("You don't see any {} here.\n", noun);
-                            println!("Did NOT find object!");
-                            (output, None)
-                        } else {
-                            println!("Found Object!");
-                            (output, Some(obj_index))
-                        }
-                    }
-                    _ => {
-                        output = format!("You don't see any {} here.\n", noun);
-                        println!("Did NOT find object!");
-                        (output, None)
-                    }
-                }
-        */
-        /*
-         * Attempt 1
-         *
-        let obj_index = self.get_object_index(noun);
-        match obj_index {
-            None => (format!("I don't understand {}.\n", message), None),
-            Some(obj_index) => {
-                match (obj_index, self.objects[obj_index].location) {
-                    (_, None) => (output, None),
-                    (obj_index, Some(obj_loc)) => {
-                        match (obj_index, obj_loc, self.objects[obj_loc].location) {
-                            (_, _, None) => (output, None),
-                            (obj_index, obj_loc, Some(obj_container_loc)) => {
-                                match (
-                                    obj_index,
-                                    obj_loc,
-                                    obj_container_loc,
-                                    self.objects[LOC_PLAYER].location,
-                                ) {
-                                    (_, _, _, None) => (output, None),
-                                    (obj_index, obj_loc, obj_container_loc, Some(player_loc)) => {
-                                        if !(obj_index == LOC_PLAYER                                    // Is this the player object?
-                                                || obj_index == player_loc          // Is this the player's location?
-                                                || obj_loc == LOC_PLAYER            // Is this object's location the same as the player?
-                                                || obj_loc == player_loc            // Is this object in the same location as the player?
-                                                // Might not be needed at here since we test for this in the match
-                                                // || obj_loc == None                  // Is this a location?
-                                                || obj_container_loc == LOC_PLAYER  // Is this object located inside an object that the player is holding
-                                                || obj_container_loc == player_loc)
-                                        // Is this object located inside an object at the same place as the player?
-                                        {
-                                            output = format!("You don't see any {} here.\n", noun);
-                                            //(output, None)
-                                        }
-                                        (output, Some(obj_index))
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }*/
     }
 
     pub fn list_objects_at_location(&self, location: usize) -> (String, i32) {
         let mut output = String::new();
         let mut count: i32 = 0;
         for (pos, object) in self.objects.iter().enumerate() {
-            if pos != LOC_PLAYER {
-                match object.location {
-                    None => continue,
-                    Some(obj_location) => {
-                        if obj_location == location {
-                            if count == 0 {
-                                output = output + &format!("You see:\n");
-                            }
-                            count += 1;
-                            output = output + &format!("{}\n", object.description);
-                        }
+            match (pos, object.location) {
+                (pos, _) if pos == LOC_PLAYER => continue,
+                (_, Some(obj_location)) if obj_location == location => {
+                    if count == 0 {
+                        output = output + &format!("You see:\n");
                     }
+                    count += 1;
+                    output = output + &format!("{}\n", object.description);
                 }
+                _ => continue,
             }
         }
         (output, count)
@@ -310,41 +200,19 @@ impl World {
     }
 
     pub fn do_go(&mut self, noun: &String) -> String {
-        //let mut output = String::new();
-        //let output: String;
         let (output_vis, obj_opt) = self.get_visible("where you want to go", noun);
 
-        match obj_opt {
-            None => output_vis,
-            Some(obj_loc) => {
-                if obj_loc == self.objects[LOC_PLAYER].location.unwrap() {
-                    format!("Wherever you go, there you are.\n")
-                } else {
-                    self.objects[LOC_PLAYER].location = Some(obj_loc);
-                    format!("OK.\n\n") + &self.do_look(&"around".to_string())
-                }
-                //output
+        let player_loc = self.objects[LOC_PLAYER].location;
+        match (obj_opt, player_loc) {
+            (None, _) => output_vis,
+            (Some(obj_loc), Some(player_loc)) if obj_loc == player_loc => {
+                format!("Wherever you go, there you are.\n")
+            }
+            (Some(obj_loc), _) => {
+                self.objects[LOC_PLAYER].location = Some(obj_loc);
+                format!("OK.\n\n") + &self.do_look(&"around".to_string())
             }
         }
-
-        /*        for (pos, location) in self.locations.iter().enumerate() {
-                    if *noun == location.name.to_lowercase() {
-                        if pos == self.player_location {
-                            output = output + &format!("Wherever you go, there you are.\n");
-                        } else {
-                            self.player_location = pos;
-                            output = output + &format!("OK.\n\n") + &self.do_look(&"around".to_string());
-                        }
-                        break;
-                    }
-                }
-
-                if output.len() == 0 {
-                    format!("I don't understand where you want to go.")
-                } else {
-                    output
-                }
-        */
     }
 }
 
