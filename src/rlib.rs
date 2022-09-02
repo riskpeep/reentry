@@ -54,6 +54,12 @@ pub struct World {
     pub objects: Vec<Object>,
 }
 
+impl Default for World {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl World {
     pub fn new() -> Self {
         World {
@@ -109,7 +115,7 @@ impl World {
     fn get_object_index(&self, noun: &String) -> Option<usize> {
         let mut result: Option<usize> = None;
         for (pos, object) in self.objects.iter().enumerate() {
-            if self.object_has_name(&object, noun) {
+            if self.object_has_name(object, noun) {
                 result = Some(pos);
                 break;
             }
@@ -259,7 +265,7 @@ impl World {
                 (pos, _) if pos == LOC_PLAYER => continue,
                 (_, Some(obj_location)) if obj_location == location => {
                     if count == 0 {
-                        output = output + &format!("You see:\n");
+                        output += "You see:\n";
                     }
                     count += 1;
                     output = output + &format!("{}\n", object.description);
@@ -303,7 +309,7 @@ impl World {
                 self.objects[obj_opt_idx].name, self.objects[obj_loc_idx].name
             ),
             // This arm should never get hit.
-            (None, _, _, _) | (_, None, _, _) => format!("How can you drop nothing?.\n"),
+            (None, _, _, _) | (_, None, _, _) => "How can you drop nothing?.\n".to_string(),
         }
     }
 
@@ -311,9 +317,9 @@ impl World {
         let obj_loc = obj_opt.and_then(|a| self.objects[a].location);
 
         match (obj_opt, obj_loc, to) {
-            (None, _, _) => format!(""),
-            (Some(_), _, None) => format!("There is nobody to give that to.\n"),
-            (Some(_), None, Some(_)) => format!("That is way too heavy.\n"),
+            (None, _, _) => String::new(),
+            (Some(_), _, None) => "There is nobody to give that to.\n".to_string(),
+            (Some(_), None, Some(_)) => "That is way too heavy.\n".to_string(),
             (Some(obj_idx), Some(_), Some(to_idx)) => {
                 let output = self.describe_move(obj_opt, to);
                 self.objects[obj_idx].location = Some(to_idx);
@@ -331,7 +337,7 @@ impl World {
             Command::Go(noun) => self.do_go(noun),
             Command::Inventory => self.do_inventory(),
             Command::Look(noun) => self.do_look(noun),
-            Command::Quit => format!("Quitting.\nThank you for playing!"),
+            Command::Quit => "Quitting.\nThank you for playing!".to_string(),
             Command::Unknown(input_str) => format!("I don't know how to '{}'.", input_str),
         }
     }
@@ -360,7 +366,7 @@ impl World {
         match (obj_opt, obj_loc) {
             (None, _) => output_vis,
             (Some(object_idx), _) if object_idx == LOC_PLAYER => {
-                output_vis + &format!("You should not be doing that to yourself.\n")
+                output_vis + "You should not be doing that to yourself.\n"
             }
             (Some(object_idx), Some(obj_loc)) if obj_loc == LOC_PLAYER => {
                 output_vis
@@ -370,7 +376,7 @@ impl World {
                     )
             }
             (Some(_), Some(obj_loc)) if obj_loc == LOC_COPILOT => {
-                output_vis + &format!("You should ask nicely.\n")
+                output_vis + "You should ask nicely.\n"
             }
             (obj_opt, _) => self.move_object(obj_opt, Some(LOC_PLAYER)),
         }
@@ -387,14 +393,14 @@ impl World {
     pub fn do_inventory(&self) -> String {
         let (list_string, count) = self.list_objects_at_location(LOC_PLAYER);
         if count == 0 {
-            format!("You are empty handed.\n")
+            "You are empty handed.\n".to_string()
         } else {
             list_string
         }
     }
 
-    pub fn do_look(&self, noun: &String) -> String {
-        match noun.as_str() {
+    pub fn do_look(&self, noun: &str) -> String {
+        match noun {
             "around" | "" => {
                 let (list_string, _) =
                     self.list_objects_at_location(self.objects[LOC_PLAYER].location.unwrap());
@@ -404,7 +410,7 @@ impl World {
                     self.objects[self.objects[LOC_PLAYER].location.unwrap()].description
                 ) + list_string.as_str()
             }
-            _ => format!("I don't understand what you want to see.\n"),
+            _ => "I don't understand what you want to see.\n".to_string(),
         }
     }
 
@@ -415,11 +421,11 @@ impl World {
         match (obj_opt, player_loc) {
             (None, _) => output_vis,
             (Some(obj_loc), Some(player_loc)) if obj_loc == player_loc => {
-                format!("Wherever you go, there you are.\n")
+                "Wherever you go, there you are.\n".to_string()
             }
             (Some(obj_loc), _) => {
                 self.objects[LOC_PLAYER].location = Some(obj_loc);
-                format!("OK.\n\n") + &self.do_look(&"around".to_string())
+                "OK.\n\n".to_string() + &self.do_look("around")
             }
         }
     }
@@ -427,7 +433,7 @@ impl World {
 
 pub fn parse(input_str: String) -> Command {
     let lc_input_str = input_str.to_lowercase();
-    let mut split_input_iter = lc_input_str.trim().split_whitespace();
+    let mut split_input_iter = lc_input_str.split_whitespace();
 
     let verb = split_input_iter.next().unwrap_or_default().to_string();
     let noun = split_input_iter.next().unwrap_or_default().to_string();
@@ -455,7 +461,7 @@ pub fn get_input() -> Command {
     io::stdin()
         .read_line(&mut input_str)
         .expect("Failed to read move");
-    println!("");
+    println!();
 
     // Parse & Return
     parse(input_str)

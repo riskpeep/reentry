@@ -9,10 +9,10 @@ fn main() {
     // Introduction and Setup
     //
     println!("Welcome to Reentry. A space adventure.");
-    println!("");
+    println!();
     println!("You awake in darkness with a pounding headache.");
     println!("An alarm is flashing and beeping loudly. This doesn't help your headache.");
-    println!("");
+    println!();
 
     let mut command: rlib::Command;
     let mut world = rlib::World::new();
