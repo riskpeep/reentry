@@ -3,15 +3,38 @@
 //
 // A library to support the creation of a text adventure game
 // by Riskpeep
+use std::fmt;
 use std::io::{self, Write};
 
 pub enum Command {
-    Look(String),
+    Ask(String),
+    Drop(String),
+    Get(String),
+    Give(String),
     Go(String),
+    Inventory,
+    Look(String),
     Quit,
     Unknown(String),
 }
 
+impl fmt::Display for Command {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Command::Ask(_) => write!(f, "ask"),
+            Command::Drop(_) => write!(f, "drop"),
+            Command::Get(_) => write!(f, "get"),
+            Command::Give(_) => write!(f, "give"),
+            Command::Go(_) => write!(f, "go"),
+            Command::Inventory => write!(f, "inventory"),
+            Command::Look(_) => write!(f, "look"),
+            Command::Quit => write!(f, "quit"),
+            Command::Unknown(_) => write!(f, "unknown"),
+        }
+    }
+}
+
+//#[derive(Debug)]
 pub struct Object {
     pub name: String,
     pub description: String,
@@ -156,6 +179,78 @@ impl World {
         }
     }
 
+    pub fn get_possession(
+        &mut self,
+        from: Option<usize>,
+        command: Command,
+        noun: &String,
+    ) -> (String, Option<usize>) {
+        let object_idx = self.get_object_index(noun);
+        let object_loc = object_idx.and_then(|a| self.objects[a].location);
+
+        match (from, object_idx, object_loc) {
+            (None, _, _) => (
+                format!("I don't understand what you want to {}.\n", command),
+                None,
+            ),
+            (Some(_), None, _) => (
+                format!("I don't understand what you want to {}.\n", command),
+                None,
+            ),
+            (Some(from_idx), Some(object_idx), _) if object_idx == from_idx => (
+                format!(
+                    "You should not be doing that to {}.\n",
+                    self.objects[object_idx].name
+                ),
+                None,
+            ),
+            (Some(_), Some(object_idx), None) => (
+                format!("You can't do that to {}.\n", self.objects[object_idx].name),
+                None,
+            ),
+            (Some(from_idx), Some(object_idx), Some(object_loc_idx))
+                if object_loc_idx != from_idx =>
+            {
+                if from_idx == LOC_PLAYER {
+                    (
+                        format!(
+                            "You are not holding any {}.\n",
+                            self.objects[object_idx].name
+                        ),
+                        None,
+                    )
+                } else {
+                    (
+                        format!(
+                            "There appears to be no {} you can get from {}.\n",
+                            noun, self.objects[from_idx].name
+                        ),
+                        None,
+                    )
+                }
+            }
+            _ => ("".to_string(), object_idx),
+        }
+    }
+
+    pub fn actor_here(&self) -> Option<usize> {
+        let mut actor_loc: Option<usize> = None;
+
+        for (pos, object) in self.objects.iter().enumerate() {
+            match (pos, object.location) {
+                (_, obj_loc)
+                    if (obj_loc == self.objects[LOC_PLAYER].location) && (pos == LOC_COPILOT) =>
+                {
+                    actor_loc = Some(pos);
+                    break;
+                }
+                _ => continue,
+            }
+        }
+
+        actor_loc
+    }
+
     pub fn list_objects_at_location(&self, location: usize) -> (String, i32) {
         let mut output = String::new();
         let mut count: i32 = 0;
@@ -175,12 +270,126 @@ impl World {
         (output, count)
     }
 
+    pub fn describe_move(&self, obj_opt: Option<usize>, to: Option<usize>) -> String {
+        let obj_loc = obj_opt.and_then(|a| self.objects[a].location);
+        let player_loc = self.objects[LOC_PLAYER].location;
+
+        match (obj_opt, obj_loc, to, player_loc) {
+            (Some(obj_opt_idx), _, Some(to_idx), Some(player_loc_idx))
+                if to_idx == player_loc_idx =>
+            {
+                format!("You drop {}.\n", self.objects[obj_opt_idx].name)
+            }
+            (Some(obj_opt_idx), _, Some(to_idx), _) if to_idx != LOC_PLAYER => {
+                if to_idx == LOC_COPILOT {
+                    format!(
+                        "You give {} to {}.\n",
+                        self.objects[obj_opt_idx].name, self.objects[to_idx].name
+                    )
+                } else {
+                    format!(
+                        "You put {} in {}.\n",
+                        self.objects[obj_opt_idx].name, self.objects[to_idx].name
+                    )
+                }
+            }
+            (Some(obj_opt_idx), Some(obj_loc_idx), _, Some(player_loc_idx))
+                if obj_loc_idx == player_loc_idx =>
+            {
+                format!("You pick up {}.\n", self.objects[obj_opt_idx].name)
+            }
+            (Some(obj_opt_idx), Some(obj_loc_idx), _, _) => format!(
+                "You get {} from {}.\n",
+                self.objects[obj_opt_idx].name, self.objects[obj_loc_idx].name
+            ),
+            // This arm should never get hit.
+            (None, _, _, _) | (_, None, _, _) => format!("How can you drop nothing?.\n"),
+        }
+    }
+
+    pub fn move_object(&mut self, obj_opt: Option<usize>, to: Option<usize>) -> String {
+        let obj_loc = obj_opt.and_then(|a| self.objects[a].location);
+
+        match (obj_opt, obj_loc, to) {
+            (None, _, _) => format!(""),
+            (Some(_), _, None) => format!("There is nobody to give that to.\n"),
+            (Some(_), None, Some(_)) => format!("That is way too heavy.\n"),
+            (Some(obj_idx), Some(_), Some(to_idx)) => {
+                let output = self.describe_move(obj_opt, to);
+                self.objects[obj_idx].location = Some(to_idx);
+                output
+            }
+        }
+    }
+
     pub fn update_state(&mut self, command: &Command) -> String {
         match command {
-            Command::Look(noun) => self.do_look(noun),
+            Command::Ask(noun) => self.do_ask(noun),
+            Command::Drop(noun) => self.do_drop(noun),
+            Command::Get(noun) => self.do_get(noun),
+            Command::Give(noun) => self.do_give(noun),
             Command::Go(noun) => self.do_go(noun),
+            Command::Inventory => self.do_inventory(),
+            Command::Look(noun) => self.do_look(noun),
             Command::Quit => format!("Quitting.\nThank you for playing!"),
             Command::Unknown(input_str) => format!("I don't know how to '{}'.", input_str),
+        }
+    }
+
+    pub fn do_ask(&mut self, noun: &String) -> String {
+        let actor_loc = self.actor_here();
+        let (output, object_idx) =
+            self.get_possession(actor_loc, Command::Ask("ask".to_string()), noun);
+
+        output + self.move_object(object_idx, Some(LOC_PLAYER)).as_str()
+    }
+
+    pub fn do_drop(&mut self, noun: &String) -> String {
+        let (output, object_idx) =
+            self.get_possession(Some(LOC_PLAYER), Command::Drop("drop".to_string()), noun);
+        let player_loc = self.objects[LOC_PLAYER].location;
+
+        output + self.move_object(object_idx, player_loc).as_str()
+    }
+
+    pub fn do_get(&mut self, noun: &String) -> String {
+        let (output_vis, obj_opt) = self.get_visible("where you want to go", noun);
+
+        let obj_loc = obj_opt.and_then(|a| self.objects[a].location);
+
+        match (obj_opt, obj_loc) {
+            (None, _) => output_vis,
+            (Some(object_idx), _) if object_idx == LOC_PLAYER => {
+                output_vis + &format!("You should not be doing that to yourself.\n")
+            }
+            (Some(object_idx), Some(obj_loc)) if obj_loc == LOC_PLAYER => {
+                output_vis
+                    + &format!(
+                        "You already have {}.\n",
+                        self.objects[object_idx].description
+                    )
+            }
+            (Some(_), Some(obj_loc)) if obj_loc == LOC_COPILOT => {
+                output_vis + &format!("You should ask nicely.\n")
+            }
+            (obj_opt, _) => self.move_object(obj_opt, Some(LOC_PLAYER)),
+        }
+    }
+
+    pub fn do_give(&mut self, noun: &String) -> String {
+        let actor_loc = self.actor_here();
+        let (output, object_idx) =
+            self.get_possession(Some(LOC_PLAYER), Command::Give("give".to_string()), noun);
+
+        output + self.move_object(object_idx, actor_loc).as_str()
+    }
+
+    pub fn do_inventory(&self) -> String {
+        let (list_string, count) = self.list_objects_at_location(LOC_PLAYER);
+        if count == 0 {
+            format!("You are empty handed.\n")
+        } else {
+            list_string
         }
     }
 
@@ -224,8 +433,13 @@ pub fn parse(input_str: String) -> Command {
     let noun = split_input_iter.next().unwrap_or_default().to_string();
 
     match verb.as_str() {
-        "look" => Command::Look(noun),
+        "ask" => Command::Ask(noun),
+        "drop" => Command::Drop(noun),
+        "get" => Command::Get(noun),
+        "give" => Command::Give(noun),
         "go" => Command::Go(noun),
+        "inventory" => Command::Inventory,
+        "look" => Command::Look(noun),
         "quit" => Command::Quit,
         _ => Command::Unknown(input_str.trim().to_string()),
     }
