@@ -34,7 +34,6 @@ impl fmt::Display for Command {
     }
 }
 
-//#[derive(Debug)]
 pub struct Object {
     pub name: String,
     pub description: String,
@@ -108,11 +107,11 @@ impl World {
         }
     }
 
-    fn object_has_name(&self, object: &Object, noun: &String) -> bool {
+    fn object_has_name(&self, object: &Object, noun: &str) -> bool {
         *noun == object.name.to_lowercase()
     }
 
-    fn get_object_index(&self, noun: &String) -> Option<usize> {
+    fn get_object_index(&self, noun: &str) -> Option<usize> {
         let mut result: Option<usize> = None;
         for (pos, object) in self.objects.iter().enumerate() {
             if self.object_has_name(object, noun) {
@@ -123,7 +122,7 @@ impl World {
         result
     }
 
-    fn get_visible(&self, message: &str, noun: &String) -> (String, Option<usize>) {
+    fn get_visible(&self, message: &str, noun: &str) -> (String, Option<usize>) {
         let mut output = String::new();
 
         let obj_index = self.get_object_index(noun);
@@ -189,7 +188,7 @@ impl World {
         &mut self,
         from: Option<usize>,
         command: Command,
-        noun: &String,
+        noun: &str,
     ) -> (String, Option<usize>) {
         let object_idx = self.get_object_index(noun);
         let object_loc = object_idx.and_then(|a| self.objects[a].location);
@@ -304,10 +303,12 @@ impl World {
             {
                 format!("You pick up {}.\n", self.objects[obj_opt_idx].name)
             }
-            (Some(obj_opt_idx), Some(obj_loc_idx), _, _) => format!(
-                "You get {} from {}.\n",
-                self.objects[obj_opt_idx].name, self.objects[obj_loc_idx].name
-            ),
+            (Some(obj_opt_idx), Some(obj_loc_idx), _, _) => {
+                format!(
+                    "You get {} from {}.\n",
+                    self.objects[obj_opt_idx].name, self.objects[obj_loc_idx].name
+                )
+            }
             // This arm should never get hit.
             (None, _, _, _) | (_, None, _, _) => "How can you drop nothing?.\n".to_string(),
         }
@@ -342,7 +343,7 @@ impl World {
         }
     }
 
-    pub fn do_ask(&mut self, noun: &String) -> String {
+    pub fn do_ask(&mut self, noun: &str) -> String {
         let actor_loc = self.actor_here();
         let (output, object_idx) =
             self.get_possession(actor_loc, Command::Ask("ask".to_string()), noun);
@@ -350,7 +351,7 @@ impl World {
         output + self.move_object(object_idx, Some(LOC_PLAYER)).as_str()
     }
 
-    pub fn do_drop(&mut self, noun: &String) -> String {
+    pub fn do_drop(&mut self, noun: &str) -> String {
         let (output, object_idx) =
             self.get_possession(Some(LOC_PLAYER), Command::Drop("drop".to_string()), noun);
         let player_loc = self.objects[LOC_PLAYER].location;
@@ -358,7 +359,7 @@ impl World {
         output + self.move_object(object_idx, player_loc).as_str()
     }
 
-    pub fn do_get(&mut self, noun: &String) -> String {
+    pub fn do_get(&mut self, noun: &str) -> String {
         let (output_vis, obj_opt) = self.get_visible("where you want to go", noun);
 
         let obj_loc = obj_opt.and_then(|a| self.objects[a].location);
@@ -382,7 +383,7 @@ impl World {
         }
     }
 
-    pub fn do_give(&mut self, noun: &String) -> String {
+    pub fn do_give(&mut self, noun: &str) -> String {
         let actor_loc = self.actor_here();
         let (output, object_idx) =
             self.get_possession(Some(LOC_PLAYER), Command::Give("give".to_string()), noun);
@@ -414,7 +415,7 @@ impl World {
         }
     }
 
-    pub fn do_go(&mut self, noun: &String) -> String {
+    pub fn do_go(&mut self, noun: &str) -> String {
         let (output_vis, obj_opt) = self.get_visible("where you want to go", noun);
 
         let player_loc = self.objects[LOC_PLAYER].location;
