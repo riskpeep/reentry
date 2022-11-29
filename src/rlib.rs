@@ -4,7 +4,9 @@
 // A library to support the creation of a text adventure game
 // by Riskpeep
 use std::fmt;
+use std::fs::read_to_string;
 use std::io::{self, Write};
+use std::path::Path;
 
 pub enum Command {
     Ask(String),
@@ -190,6 +192,19 @@ impl World {
                     destination: None,
                 },
             ],
+        }
+    }
+
+    pub fn read_from_file(game_file: &str) -> Result<World, std::io::Error> {
+        let game_file_path = Path::new(game_file);
+        let game_file_data_res = read_to_string(game_file_path);
+
+        match game_file_data_res {
+            Ok(_) => {
+                // TODO - For now just make a new world and return
+                Ok(World::new())
+            }
+            Err(file_err) => Err(file_err),
         }
     }
 
