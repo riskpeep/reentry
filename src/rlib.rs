@@ -3,6 +3,7 @@
 //
 // A library to support the creation of a text adventure game
 // by Riskpeep
+use serde::{Deserialize, Serialize};
 use std::fmt;
 use std::fs::read_to_string;
 use std::io::{self, Write};
@@ -36,6 +37,7 @@ impl fmt::Display for Command {
     }
 }
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Object {
     pub labels: Vec<String>,
     pub description: String,
@@ -80,6 +82,7 @@ const LOC_COPILOT: usize = 7;
 // const WALL_GALLEY: usize = 14;
 // const WALL_CRYOCHAMBER: usize = 15;
 
+#[derive(Serialize, Deserialize, Debug)]
 pub struct World {
     pub objects: Vec<Object>,
 }
@@ -201,8 +204,16 @@ impl World {
 
         match game_file_data_res {
             Ok(_) => {
+                // Create a new World struct
+                let new_world = World::new();
+
+                // Write (serialize) the struct to a string using Serde
+                let serialized_ron = ron::to_string(&new_world).unwrap();
+                // TODO - Write the serialized string to the console
+                println!("serialized = {}", serialized_ron);
+
                 // TODO - For now just make a new world and return
-                Ok(World::new())
+                Ok(new_world)
             }
             Err(file_err) => Err(file_err),
         }
