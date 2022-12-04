@@ -203,17 +203,27 @@ impl World {
         let game_file_data_res = read_to_string(game_file_path);
 
         match game_file_data_res {
-            Ok(_) => {
-                // Create a new World struct
-                let new_world = World::new();
+            Ok(game_file_data) => {
+                /* // Create a new World struct
+                   let new_world = World::new();
 
-                // Write (serialize) the struct to a string using Serde
-                let serialized_ron = ron::to_string(&new_world).unwrap();
-                // TODO - Write the serialized string to the console
-                println!("serialized = {}", serialized_ron);
+                   // Write (serialize) the struct to a string using Serde
+                   let serialized_ron = ron::to_string(&new_world).unwrap();
 
-                // TODO - For now just make a new world and return
-                Ok(new_world)
+                   // Write the serialized string to the console
+                   println!("serialized = {}", serialized_ron);
+                */
+
+                // Read (deserialize) a World struct from the game_file string
+                let deserialized_ron_result: Result<World, ron::error::SpannedError> =
+                    ron::from_str(&game_file_data);
+                match deserialized_ron_result {
+                    Ok(deserialized_ron) => Ok(deserialized_ron),
+                    Err(de_err_str) => Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        de_err_str.to_string(),
+                    )),
+                }
             }
             Err(file_err) => Err(file_err),
         }

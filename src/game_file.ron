@@ -1,0 +1,87 @@
+//
+// Reentry
+//
+// A game by Riskpeep
+World (
+  objects: [
+    (labels      : [ "Bridge" ],
+     description : "the bridge",
+     location    : None,
+     destination : None
+    ),
+    (labels      : ["Galley"],
+     description : "the galley",
+     location    : None,
+     destination : None
+    ),
+    (labels      : ["Cryochamber"],
+     description : "the cryochamber",
+     location    : None,
+     destination : None
+    ),
+    (labels      : ["Yourself"],
+     description : "yourself",
+     location    : Some(0),
+     destination : None
+    ),
+    (labels      : ["Glossy Photo","Photo"],
+     description : "a glossy photo of a family. They look familiar",
+     location    : Some(0),
+     destination : None
+    ),
+    (labels      : ["Cryosuit"],
+     description : "a silver suit that will protect you in cryosleep",
+     location    : Some(2),
+     destination : None
+    ),
+    (labels      : ["Wrinkled Photo","Photo"],
+     description : "a wrinkled photo of a woman. They woman is crying",
+     location    : Some(7),
+     destination : None
+    ),
+    (labels      : ["Copilot"],
+     description : "your copilot sleeping in his cryochamber",
+     location    : Some(2),
+     destination : None
+    ),
+    (labels      : ["Pen"],
+     description : "a pen",
+     location    : Some(7),
+     destination : None
+    ),
+    (labels      : ["Aft"],
+     description : "a passage aft to the galley",
+     location    : Some(0),
+     destination : Some(1)
+    ),
+    (labels      : ["Forward"],
+     description : "a passage forward to the bridge",
+     location    : Some(1),
+     destination : Some(0)
+    ),
+    (labels      : ["Aft"],
+     description : "a passage aft to the cryochamber",
+     location    : Some(1),
+     destination : Some(2)
+    ),
+    (labels      : ["Forward"],
+     description : "a passage forward to the galley",
+     location    : Some(2),
+     destination : Some(1)
+    ),
+    (labels      : ["Forward","Port","Starboard"],
+     description : "a bulkhead covered in switchpanels and gauges",
+     location    : Some(0),
+     destination : None
+    ),
+    (labels      : ["Port","Starboard"],
+     description : "a smooth bulkhead with an endless void on the other side",
+     location    : Some(1),
+     destination : None
+    ),
+    (labels      : ["Aft","Port","Starboard"],
+     description : "cryochambers backed by a dense tangle of pipes, tubes, and conduits",
+     location    : Some(2),
+     destination : None
+    )
+    ])
