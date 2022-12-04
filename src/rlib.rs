@@ -204,16 +204,6 @@ impl World {
 
         match game_file_data_res {
             Ok(game_file_data) => {
-                /* // Create a new World struct
-                   let new_world = World::new();
-
-                   // Write (serialize) the struct to a string using Serde
-                   let serialized_ron = ron::to_string(&new_world).unwrap();
-
-                   // Write the serialized string to the console
-                   println!("serialized = {}", serialized_ron);
-                */
-
                 // Read (deserialize) a World struct from the game_file string
                 let deserialized_ron_result: Result<World, ron::error::SpannedError> =
                     ron::from_str(&game_file_data);
