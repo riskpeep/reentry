@@ -87,6 +87,19 @@ pub struct World {
     pub objects: Vec<Object>,
 }
 
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SavedObject {
+    pub labels: Vec<String>,
+    pub description: String,
+    pub location: String,
+    pub destination: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct SavedWorld {
+    pub objects: Vec<SavedObject>,
+}
+
 impl Default for World {
     fn default() -> Self {
         Self::new()
