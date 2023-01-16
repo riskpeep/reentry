@@ -4,6 +4,7 @@
 // A library to support the creation of a text adventure game
 // by Riskpeep
 use serde::{Deserialize, Serialize};
+use std::error;
 use std::fmt;
 use std::fs::read_to_string;
 use std::io::{self, Write};
@@ -98,6 +99,21 @@ pub struct SavedObject {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct SavedWorld {
     pub objects: Vec<SavedObject>,
+}
+
+#[derive(Debug)]
+pub enum ParseError {
+    UnknownName(String),
+}
+
+impl error::Error for ParseError {}
+
+impl fmt::Display for ParseError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            ParseError::UnknownName(message) => write!(f, "{}", message),
+        }
+    }
 }
 
 impl Default for World {
@@ -577,6 +593,105 @@ impl World {
                 }
             }
         }
+    }
+}
+
+impl Object {
+    fn new(
+        new_labels: Vec<String>,
+        new_description: String,
+        new_location: Option<usize>,
+        new_destination: Option<usize>,
+    ) -> Object {
+        Object {
+            labels: new_labels,
+            description: new_description,
+            location: new_location,
+            destination: new_destination,
+        }
+    }
+}
+
+impl From<&World> for SavedWorld {
+    fn from(value: &World) -> Self {
+        let mut new_vec_of_objects: Vec<SavedObject> = Vec::new();
+
+        for item in &value.objects {
+            new_vec_of_objects.push(SavedObject {
+                labels: item.labels.clone(),
+                description: item.description.to_string(),
+                location: match item.location {
+                    Some(location) => value.objects[location].labels[0].to_string(),
+                    None => "".to_string(),
+                },
+                destination: match item.destination {
+                    Some(destination) => value.objects[destination].labels[0].to_string(),
+                    None => "".to_string(),
+                },
+            });
+        }
+
+        SavedWorld {
+            objects: new_vec_of_objects,
+        }
+    }
+}
+
+impl TryInto<World> for SavedWorld {
+    type Error = ParseError;
+
+    fn try_into(self) -> Result<World, Self::Error> {
+        let mut new_vec_of_objects: Vec<Object> = Vec::new();
+
+        'items: for item in &self.objects {
+            let mut new_object = Object::new(
+                item.labels.clone(),
+                item.description.to_string(),
+                None,
+                None,
+            );
+
+            let mut found_location: bool = item.location.is_empty();
+            let mut found_destination: bool = item.destination.is_empty();
+
+            for (pos, internal_item) in self.objects.iter().enumerate() {
+                if item.location == internal_item.labels[0] {
+                    new_object.location = Some(pos);
+                    found_location = true;
+                }
+                if item.destination == internal_item.labels[0] {
+                    new_object.destination = Some(pos);
+                    found_destination = true;
+                }
+                if found_location && found_destination {
+                    new_vec_of_objects.push(new_object);
+                    continue 'items;
+                }
+            }
+
+            if !found_location {
+                return Err(ParseError::UnknownName(format!(
+                    "Unknown location '{}'",
+                    item.location
+                )));
+            }
+
+            if !found_destination {
+                return Err(ParseError::UnknownName(format!(
+                    "Unknown destination '{}'",
+                    item.destination
+                )));
+            }
+
+            new_vec_of_objects.push(new_object);
+            return Err(ParseError::UnknownName("How are we here?".into()));
+        }
+
+        let result_world = World {
+            objects: new_vec_of_objects,
+        };
+
+        Ok(result_world)
     }
 }
 
