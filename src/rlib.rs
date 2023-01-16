@@ -3,6 +3,8 @@
 //
 // A library to support the creation of a text adventure game
 // by Riskpeep
+use serde::de::{self, Deserializer, Error, MapAccess, SeqAccess, Visitor};
+use serde::ser::{SerializeStruct, Serializer};
 use serde::{Deserialize, Serialize};
 use std::error;
 use std::fmt;
@@ -83,7 +85,7 @@ const LOC_COPILOT: usize = 7;
 // const WALL_GALLEY: usize = 14;
 // const WALL_CRYOCHAMBER: usize = 15;
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Debug)]
 pub struct World {
     pub objects: Vec<Object>,
 }
@@ -233,6 +235,18 @@ impl World {
 
         match game_file_data_res {
             Ok(game_file_data) => {
+                /*// Create a new World struct
+                let new_world = World::new();
+
+                // Write (serialize) the struct to a string using Serde
+                let serialized_ron = ron::to_string(&new_world).unwrap();
+
+                // Write the serialized string to the console
+                println!("serialized = {}", serialized_ron);
+
+                Ok(new_world)
+                */
+
                 // Read (deserialize) a World struct from the game_file string
                 let deserialized_ron_result: Result<World, ron::error::SpannedError> =
                     ron::from_str(&game_file_data);
@@ -612,6 +626,14 @@ impl Object {
     }
 }
 
+impl SavedWorld {
+    fn new(new_objects: Vec<SavedObject>) -> SavedWorld {
+        SavedWorld {
+            objects: new_objects,
+        }
+    }
+}
+
 impl From<&World> for SavedWorld {
     fn from(value: &World) -> Self {
         let mut new_vec_of_objects: Vec<SavedObject> = Vec::new();
@@ -692,6 +714,114 @@ impl TryInto<World> for SavedWorld {
         };
 
         Ok(result_world)
+    }
+}
+
+impl Serialize for World {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let serializeable_struct: SavedWorld = SavedWorld::from(self);
+
+        // 1 is the number of fields in the struct.
+        let mut state = serializer.serialize_struct("World", 1)?;
+        state.serialize_field("objects", &serializeable_struct.objects)?;
+        state.end()
+    }
+}
+
+impl<'de> Deserialize<'de> for World {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        enum Field {
+            Objects,
+        }
+
+        impl<'de> Deserialize<'de> for Field {
+            fn deserialize<D>(deserializer: D) -> Result<Field, D::Error>
+            where
+                D: Deserializer<'de>,
+            {
+                struct FieldVisitor;
+
+                impl<'de> Visitor<'de> for FieldVisitor {
+                    type Value = Field;
+
+                    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                        formatter.write_str("`objects`")
+                    }
+
+                    fn visit_str<E>(self, value: &str) -> Result<Field, E>
+                    where
+                        E: de::Error,
+                    {
+                        match value {
+                            "objects" => Ok(Field::Objects),
+                            _ => Err(de::Error::unknown_field(value, FIELDS)),
+                        }
+                    }
+                }
+
+                deserializer.deserialize_identifier(FieldVisitor)
+            }
+        }
+
+        struct SavedWorldVisitor;
+
+        impl<'de> Visitor<'de> for SavedWorldVisitor {
+            type Value = SavedWorld;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("struct SavedWorld")
+            }
+
+            fn visit_seq<V>(self, mut seq: V) -> Result<SavedWorld, V::Error>
+            where
+                V: SeqAccess<'de>,
+            {
+                let objects = seq
+                    .next_element()?
+                    .ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                Ok(SavedWorld::new(objects))
+            }
+            fn visit_map<V>(self, mut map: V) -> Result<SavedWorld, V::Error>
+            where
+                V: MapAccess<'de>,
+            {
+                let mut objects = None;
+                while let Some(key) = map.next_key()? {
+                    match key {
+                        Field::Objects => {
+                            if objects.is_some() {
+                                return Err(de::Error::duplicate_field("objects"));
+                            }
+                            objects = Some(map.next_value()?);
+                        }
+                    }
+                }
+                let objects = objects.ok_or_else(|| de::Error::missing_field("objects"))?;
+                Ok(SavedWorld::new(objects))
+            }
+        }
+
+        const FIELDS: &[&str] = &["objects"];
+        let internal_extract = deserializer.deserialize_struct("World", FIELDS, SavedWorldVisitor);
+        match internal_extract {
+            Ok(extracted_val) => {
+                let external_val = extracted_val.try_into();
+                match external_val {
+                    Ok(result_val) => Ok(result_val),
+                    // From here: https://serde.rs/convert-error.html
+                    // But that lacks context, this one is better:
+                    // https://stackoverflow.com/questions/66230715/make-my-own-error-for-serde-json-deserialize
+                    Err(_) => external_val.map_err(D::Error::custom),
+                }
+            }
+            Err(err_val) => Err(err_val),
+        }
     }
 }
 
