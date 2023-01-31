@@ -91,14 +91,18 @@ pub struct World {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct SavedObject {
     pub labels: Vec<String>,
     pub description: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub location: String,
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub destination: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct SavedWorld {
     pub objects: Vec<SavedObject>,
 }

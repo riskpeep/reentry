@@ -2,52 +2,72 @@
 // Reentry
 //
 // A game by Riskpeep
+//
+// Contains a vector of game objects that describe the game world
+// Objects can have the following fields:
+//      labels      : A list of names that can be used to refer to this object.
+//                    The first label must be globally unique.
+//                  : Vec<String>
+//                  : Required
+//                  : ["foo", "bar"]
+//      description : A short description of the object. Appears to describe
+//                    the object when using the 'look' command to see objects
+//                    present in a location.
+//                  : String
+//                  : Required
+//                  : "the bridge"
+//      location    : When present indicates that this is an object (or path)
+//                    in the game. Lists the name of the location where this
+//                    object is located. If present, must contain the name of
+//                    an existing object in the game. If blank (""), or not
+//                    present, the object is a location in the 'world.'
+//                  : String
+//                  : Required
+//                  : "Bridge"
+//      destination : When present indicates that this object is a path from
+//                    one game location to another. Contains the name of the
+//                    location to which this path will move the player if
+//                    followed. If present, must contain the name of an
+//                    existing object in the game. Note that paths are one way
+//                    if a two way passage is desired, two objects must be used
+//                    to indicate each direction.
+//                  : String
+//                  : Required
+//                  : "Cryochamber"
 World (
     objects : [
         (labels     : ["Bridge"],
-        description : "the bridge. Switches, dials, and blinking lights cover the walls.",
-        location    : "",
-        destination : ""
+        description : "the bridge",
         ),
         (labels     : ["Galley"],
         description : "the galley",
-        location    : "",
-        destination : ""
         ),
         (labels     : ["Cryochamber"],
         description : "the cryochamber",
-        location    : "",
-        destination : ""
         ),
         (labels     : ["Yourself"],
         description : "yourself",
         location    : "Bridge",
-        destination : ""
         ),
         (labels     : ["Glossy Photo", "Photo"],
         description : "a glossy photo of a family. They look familiar",
         location    : "Bridge",
-        destination : ""
         ),
         (labels     : ["Cryosuit"],
         description : "a silver suit that will protect you in cryosleep",
         location    : "Cryochamber",
-        destination : ""
         ),
         (labels     : ["Wrinkled Photo", "Photo"],
         description : "a wrinkled photo of a woman. They woman is crying",
         location    : "Copilot",
-        destination : ""
         ),
         (labels     : ["Copilot"],
         description : "your copilot sleeping in his cryochamber",
         location    : "Cryochamber",
-        destination : ""
         ),
         (labels     : ["Pen"],
         description : "a pen",
         location    : "Copilot",
-        destination : ""
         ),
         (labels     : ["Aft"],
         description : "a passage aft to the galley",
@@ -72,16 +92,14 @@ World (
         (labels     : ["Forward", "Port", "Starboard"],
         description : "a bulkhead covered in switchpanels and gauges",
         location    : "Bridge",
-        destination : ""
         ),
         (labels     : ["Port", "Starboard"],
         description : "a smooth bulkhead with an endless void on the other side",
         location    : "Galley",
-        destination : ""
         ),
         (labels     : ["Aft", "Port", "Starboard"],
         description : "cryochambers backed by a dense tangle of pipes, tubes, and conduits",
         location    : "Cryochamber",
-        destination : "")
+        )
     ]
 )
